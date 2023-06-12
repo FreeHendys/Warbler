@@ -68,9 +68,9 @@ class UserModelTestCase(TestCase):
         """Does basic model work?"""
 
         u = User(
-            email="cheese@burger.com",
-            username="burgercheese",
-            password="potatopotato"
+            email="test@test.com",
+            username="testuser",
+            password="HASHED_PASSWORD"
         )
 
         db.session.add(u)
@@ -80,6 +80,11 @@ class UserModelTestCase(TestCase):
         self.assertEqual(len(u.messages), 0)
         self.assertEqual(len(u.followers), 0)
 
+    ####
+    #
+    # Following tests
+    #
+    ####
     def test_user_follows(self):
         self.u1.following.append(self.u2)
         db.session.commit()
@@ -106,29 +111,35 @@ class UserModelTestCase(TestCase):
         self.assertTrue(self.u2.is_followed_by(self.u1))
         self.assertFalse(self.u1.is_followed_by(self.u2))
 
+    ####
+    #
+    # Signup Tests
+    #
+    ####
     def test_valid_signup(self):
         u_test = User.signup(
-            "Kanye West", "imcrazy@kanye.com", "donda1234", None)
-        uid = 243546576879809
+            "testtesttest", "testtest@test.com", "password", None)
+        uid = 99999
         u_test.id = uid
         db.session.commit()
 
         u_test = User.query.get(uid)
         self.assertIsNotNone(u_test)
-        self.assertEqual(u_test.username, "Kanye West")
-        self.assertEqual(u_test.email, "imcrazy@kanye.com")
-        self.assertNotEqual(u_test.password, "donda1234")
+        self.assertEqual(u_test.username, "testtesttest")
+        self.assertEqual(u_test.email, "testtest@test.com")
+        self.assertNotEqual(u_test.password, "password")
+        # Bcrypt strings should start with $2b$
         self.assertTrue(u_test.password.startswith("$2b$"))
 
     def test_invalid_username_signup(self):
-        invalid = User.signup(None, "imcrazy@kanye.com", "donda1234", None)
-        uid = 243546576879809
+        invalid = User.signup(None, "test@test.com", "password", None)
+        uid = 123456789
         invalid.id = uid
         with self.assertRaises(exc.IntegrityError) as context:
             db.session.commit()
 
     def test_invalid_email_signup(self):
-        invalid = User.signup("Kanye West", None, "donda1234", None)
+        invalid = User.signup("testtest", None, "password", None)
         uid = 123789
         invalid.id = uid
         with self.assertRaises(exc.IntegrityError) as context:
@@ -136,18 +147,23 @@ class UserModelTestCase(TestCase):
 
     def test_invalid_password_signup(self):
         with self.assertRaises(ValueError) as context:
-            User.signup("Kanye West", "imcrazy@kanye.com", "", None)
+            User.signup("testtest", "email@email.com", "", None)
 
         with self.assertRaises(ValueError) as context:
-            User.signup("Kanye West", "imcrazy@kanye.com", None, None)
+            User.signup("testtest", "email@email.com", None, None)
 
+    ####
+    #
+    # Authentication Tests
+    #
+    ####
     def test_valid_authentication(self):
-        u = User.authenticate(self.u1.username, "donda1234")
+        u = User.authenticate(self.u1.username, "password")
         self.assertIsNotNone(u)
         self.assertEqual(u.id, self.uid1)
 
     def test_invalid_username(self):
-        self.assertFalse(User.authenticate("Kanye East", "donda1234"))
+        self.assertFalse(User.authenticate("badusername", "password"))
 
     def test_wrong_password(self):
-        self.assertFalse(User.authenticate(self.u1.username, "donda4321"))
+        self.assertFalse(User.authenticate(self.u1.username, "badpassword"))

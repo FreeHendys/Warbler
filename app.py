@@ -113,7 +113,7 @@ def login():
 def logout():
     """Handle logout of user."""
 
-    do_login()
+    do_logout()
 
     flash("You have been successfully logged out. Can wait to see you again", 'success')
     return redirect("/login")
@@ -210,7 +210,7 @@ def stop_following(follow_id):
     return redirect(f"/users/{g.user.id}/following")
 
 
-@app.route('/users/<int:user_id>/like', method=['POST'])
+@app.route('/users/<int:user_id>/like', methods=['POST'])
 def add_like(message_id):
     """Liked messages for the logged in user"""
 
@@ -248,8 +248,8 @@ def profile():
         if User.authenticate(user.username, form.password.data):
             user.username = form.username.data
             user.email = form.email.data
-            user.profile_image_url = form.profile_image_url or "/static/images/default-pic.png"
-            user.header_image_url = form.header_image_uri or "/static/images/warbler-hero.jpg"
+            user.profile_image_url = form.profile_image_url.data or "/static/images/default-pic.png"
+            user.header_image_url = form.header_image_url.data or "/static/images/warbler-hero.jpg"
             user.bio = form.bio.data
 
             db.session.commit()
@@ -307,7 +307,10 @@ def messages_show(message_id):
     """Show a message."""
 
     msg = Message.query.get(message_id)
-    return render_template('messages/show.html', message=msg)
+    if not msg:
+        return abort(404)
+    else:
+        return render_template('messages/show.html', message=msg)
 
 
 @app.route('/messages/<int:message_id>/delete', methods=["POST"])
